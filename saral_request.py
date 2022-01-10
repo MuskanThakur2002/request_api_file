@@ -1,85 +1,136 @@
-import json
 import requests
+import json
 
-resp ='http://saral.navgurukul.org/api/courses'
-var1= requests.get(resp)
-data = var1.json()
-my_file =open("saral_request.json","w")
-Data = json.dump(data,my_file,indent=4)
-my_file.close()
-for course in data:
-    print(course)
-courses=[]
-for course in range(len(data["availableCourses"])):
-    print(course+1,":-", data["availableCourses"][course]['name'],data["availableCourses"][course]['id'])
-    courses.append(data["availableCourses"][course]['id'])
+saral_api = "http://saral.navgurukul.org/api/courses" 
+saral_url = requests.get(saral_api)
+data = saral_url.json()
+with open ("courses.json","w") as saral_data :
+    json.dump(data,saral_data,indent = 4)
+serial_no = 0
+for i in data["availableCourses"] :
+    print(serial_no+1, i["name"],i["id"])
+    serial_no+=1
+user_input = int(input("enter the Course no. which you want to learn."))
+print(data["availableCourses"][user_input-1]["name"])
+
+up_navigation = input("Do you want to continue the Course y/n")
+if up_navigation == "n" :
+    serial_no = 0
+    for i in data["availableCourses"] :
+        print(serial_no+1, i["name"],i["id"])
+        serial_no+=1
+user_input = int(input("Confirm the Course again to learn."))
+print(data["availableCourses"][user_input-1]["name"])
+
+saral_api1 = "http://saral.navgurukul.org/api/courses/" + str(data["availableCourses"][user_input-1]["id"]) + "/exercises"
+response1=requests.get(saral_api1)
+data1=response1.json()
+with open("parents.json","w") as child_data:
+    json.dump(data1,child_data,indent=4)
+
+serial_no2=0
+for i in data1["data"] :
+    print(serial_no2+1,".",i["name"])
+    if len(i["childExercises"])>0 :
+        s = 0
+        for j in i["childExercises"]:
+            s= s + 1
+            print("      ",s,j["name"])
+    else:
+        print("      ","1",i["slug"])
+    serial_no2+=1
+
+up_navigation1 = input("Do you want to continue this topic y/n")
+if up_navigation1 == "n" :
+    saral_api1 = "http://saral.navgurukul.org/api/courses/" + str(data["availableCourses"][user_input-1]["id"]) + "/exercises"
+    response1=requests.get(saral_api1)
+    data1=response1.json()
+    with open("parents.json","w") as child_data:
+        json.dump(data1,child_data,indent=4)
+
+    serial_no2=0
+    for i in data1["data"] :
+        print(serial_no2+1,".",i["name"])
+        if len(i["childExercises"])>0 :
+            s = 0
+            for j in i["childExercises"]:
+                s= s + 1
+            print("      ",s,j["name"])
+        else:
+            print("      ","1",i["slug"])
+        serial_no2+=1
     
-id=int(input("Select any course:- "))
-parent_link= "http://saral.navgurukul.org/api/courses/"+courses[id-1]+"/exercises" 
-parent_responce=requests.get(parent_link)
-parent_data=parent_responce.json()
-parent_name=open("parent_file.json","w")
-parent=json.dumps(parent_data, indent=4)
-parent_name.write(parent)
-parent_name.close()
-parent_index=[]
-for parents in range(len(parent_data['data'])):
-    print(parents+1,":-", parent_data['data'][parents]['name'], parent_data['data'][parents]['parent_exercise_id'])
-    parent_index.append(parent_data['data'][parents]['parent_exercise_id'])
-    if 'childExercises' in parent_data['data'][parents]:
-        for child in range(len(parent_data['data'][parents]['childExercises'])):
-            print("         ",child,":-", parent_data['data'][parents]['childExercises'][child]['name'],parent_data['data'][parents]['childExercises'][child]['id'])
-            child_data=parent_data['data'][parents]['childExercises'][child]
-            child_name=open("child_file.json","a")
-            child_du=json.dumps(child_data, indent=4)
-            child_name.write(child_du)
-            child_name.close()
 
-id1=int(input("Select any parents :- "))
-child_index=[]
-for parents in parent_data['data']:
-    if parents['id']==parent_index[id1-1]:
-        print(parents['name'])
-        for child in range(len(parents['childExercises'])):
-            print("         ",child+1,":-", parents['childExercises'][child]['id'], parents['childExercises'][child]['name'])
-            child_index.append(parents['childExercises'][child]['id'])
-        slugs=[] 
-        for i in range(len(parents['childExercises'])):
-            slug=parents['childExercises'][i]['slug']
-            id=parents['childExercises'][i]['id']
-            slug_link='http://saral.navgurukul.org/api/courses/'+id+'/exercise/getBySlug?slug='+slug
-            slug_request= requests.get(slug_link)
-            sluging = slug_request.json()
-            slugs.append(sluging['content'])
-            slug_name=open("slug_file.json","a")
-            slug_du=json.dumps(sluging['content'], indent=4)
-            slug_name.write(slug_du)
-            slug_name.close()
-        id3=int(input("choose id for getting slug"))
-        slug=slugs[id3-1]
-        print(slug)
-        k=id3-1
-        while i <= len(slugs):
-            pre_next=input("what next contant you want (p/n)")
-            if pre_next=="p":
+topic_no = int(input("Enter the Topic which you want to Learn : "))
+serial_no3 = 0
+slug_content=[]
+for l in data1["data"] :
+    serial_no3+=1
+    if topic_no == serial_no3 :
+        print(l["slug"])
+        course_data = requests.get("http://saral.navgurukul.org/api/courses/"+str(l["id"]+"/exercise/getBySlug?slug="+l["slug"])).text 
+        data_type = json.loads(course_data)
+        print(data_type["content"])
+        if len(l["childExercises"]) !=0 :
+            k = 0
+            for i in l["childExercises"]:
+                k+=1
+                print(k,i["slug"])
+                course_data = requests.get("http://saral.navgurukul.org/api/courses/" + str(data["availableCourses"][user_input-1]["id"])+"/exercise/getBySlug?slug="+i["slug"])
+                data2 = course_data.json()
+                slug_content.append(data2['content'])
+                
+        up_navigation2 = input("Do want to continue this question y/n")
+        if up_navigation2 == "n" :
+            serial_no3 = 0
+            slug_content=[]
+            for l in data1["data"] :
+                serial_no3+=1
+                if topic_no == serial_no3 :
+                    print(l["slug"])
+                    course_data = requests.get("http://saral.navgurukul.org/api/courses/"+str(l["id"]+"/exercise/getBySlug?slug="+l["slug"])).text 
+                    data_type = json.loads(course_data)
+                    print(data_type["content"])
+                    if len(l["childExercises"]) !=0 :
+                        k = 0
+                        for i in l["childExercises"]:
+                            k+=1
+                            print(k,i["slug"])
+                            course_data = requests.get("http://saral.navgurukul.org/api/courses/" + str(data["availableCourses"][user_input-1]["id"])+"/exercise/getBySlug?slug="+i["slug"])
+                            data2 = course_data.json()
+                            slug_content.append(data2['content'])
+
+        n = int(input("Enter the question number which you want learn : "))
+        index = 0
+        k=n-1
+        print(slug_content[k])  
+        while index <= len(slug_content):
+            prev_next = input("you want prev/next question p/n")
+            if prev_next == "p":
+                # index=index-1
                 k=k-1
-                if k==0:
+                print(k)
+                if k==-1:
                     print("last page")
                     break
                 else:
-                    print(k)
-                    print(slugs[k])
+                    print(slug_content[k])
                     continue
-            elif pre_next=="n":
+            elif prev_next=="n":
+                # index+=1
+                print(k)
                 k=k+1
-                if k==len(slugs)+1:
+                if k==len(slug_content):
                     print("last page")
                     break
                 else:
-                    print(k)
-                    print(slugs[id3])
+                    print(slug_content[k])
                     continue
             else:
                 print("write properly")
                 continue
             i+=1
+
+
+
+
